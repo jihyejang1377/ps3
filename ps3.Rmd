@@ -1,0 +1,420 @@
+---
+title: "pset3"
+author: "Jihye"
+date: "1/22/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+```
+
+## 1.1 Misc 
+1. Who did you work with?
+Umer and Camila
+
+## 1.2 Data Ingestion (1 point)
+1. Find and download Medicares home health public use files (PUF) by provider for 2014. Open the file in Excel. What does it mean when there is a "*" listed in this file?    
+it means the data is missing. The warning tells you all the cells with "*".
+
+Read the file into R. 
+You will get some warnings when you read it in. What are the warnings? Name the data frame prov. Use test_that to check that you have 10882 rows.
+```{r}
+setwd("/Users/JihyeJang/Documents/academic/uchicago/quarter 5/Data Skill/week 3 & 4")
+prov <- readxl::read_excel("HH_PUF_Provider_2014.xlsx", sheet = "Provider")
+```   
+warning: Expecting numeric in AN2071 / R2071C40: got '*'Expecting numeric in AN2144 / R2144C40: got '*'Expecting numeric in AJ5157 / R5157C36: got '*'Expecting numeric in AN5251 / R5251C40: got '*'Expecting numeric in AN5272 / R5272C40: got '*'Expecting numeric in AN5305 / R5305C40: got '*'Expecting numeric in AN5350 / R5350C40: got '*'Expecting numeric in AN6822 / R6822C40: got '*'Expecting numeric in AN8309 / R8309C40: got '*'    
+
+```{r}
+testthat::expect_equal(nrow(prov), 10882)
+```   
+Yes, it has 10882 rows.   
+
+1. Find and download Medicares home health PUF by provider and HHRG for 2014. Read it into R and name it prov_hhrg. Use test_that to check that you have 105400 rows.
+```{r}
+setwd("/Users/JihyeJang/Documents/academic/uchicago/quarter 5/Data Skill/week 3 & 4")
+prov_hhrg <- readxl::read_excel("HH_PUF_Provider_by_HHRG_2014.xlsx", sheet = "Provider by HHRG")
+testthat::expect_equal(nrow(prov_hhrg), 105400)
+```    
+Yes, it has 105400 rows.    
+
+2. Download Medicares 2014 case-mix weights using the file here. Name the data frame cm_wt. Name the variable for 2014 weights hcc. Drop the column named 2013 HH PPS Case-Mix Weights. Use test_that to check that you have 153 rows.
+```{r}
+cm_wt <- readxl::read_excel("CY 2014 Final HH PPS Case-Mix Weights.xlsx")
+library("dplyr")
+names(cm_wt)[names(cm_wt) == "2014 Final HH PPS Case-Mix Weights"] <- "hcc"
+cm_wt = cm_wt[,c(1,2,3,5)]
+testthat::expect_equal(nrow(cm_wt), 153)
+```
+
+## 1.3 Institutional Research (1 point)     
+
+1. What are five examples of services that home health agencies bill Medicare for?   
+Link: https://www.medicare.gov/coverage/home-health-services.html
+1) Intermittent skilled nursing care     
+2) Physical therapy     
+3) Speech-language pathology services     
+4) Continued occupational services
+5) Home health services that may also include medical social services, part-time or intermittent home health aide services, medical supplies for use at home, durable medical equipment, or injectable osteoporosis drugs.
+
+
+2. In your own words, explain what is an HHRG code.   
+Link: https://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/ProspMedicareFeeSvcPmtGen/Downloads/hippsusesv4.pdf
+Under the home health prospective payment system (HH PPS), a case-mix adjusted
+payment for up to 60 days of care is made using one of 80 Home Health Resource
+Groups (HHRG). On Medicare claims these HHRGs are represented as HIPPS codes.
+HIPPS codes are determined based on assessments made using the Outcome and
+Assessment Information Set (OASIS).      
+
+3. In your own words, explain what is an HCC score.  What does it mean for a patient to have a score of 0.75? of 1.5?     
+Link: https://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/PhysicianFeedbackProgram/Downloads/2015-RiskAdj-FactSheet.pdf   
+https://www.whiteplume.com/medicare-advantage-hcc-coding/
+
+The Centers for Medicare and Medicaid Service's (CMS) Hierarchical Condition Category (HCC) risk adjustment model is used to calculate risk scores, which will adjust capitated payments made for aged and disabled beneficiaries enrolled in Medicare Advantage (MA) and other plans.The community model accounts for each beneficiary???s age, sex, original reason for Medicare entitlement (age or disability), Medicaid enrollment, and clinical conditions as measured by Hierarchical Condition Categories (HCCs).    
+
+The average Medicare patient has an HCC score of 1.0.  If a patient has an HCC score of 1.5, that patient is expected to have 50% higher healthcare expenses over the next twelve months, compared to the average patient.  Similarly, a patient with an HCC score of 0.75 is projected to cost Medicare 25% less than the average patient.   
+
+4. In your own words, explain what is a LUPA is.  
+Link: https://www.palmettogba.com/palmetto/providers.nsf/DocsCat/Providers~JM%20Home%20Health%20and%20Hospice~Articles~Home%20Health~8ZEF4Z6215?open     
+
+A LUPA occurs when four or fewer visits are provided in a 60-day episode. Instead of payment being based on the Health Insurance Prospective Payment System (HIPPS) code, payment is based on a national standardized per visit payment by discipline instead of an episode payment for a 60-day period. Payment will be wage index adjusted.      
+
+## 1.4 Data Validation (1 point)  
+
+1. Using public documents, calculate how many people received home health care benefits from Medicare in calendar year 2014. Compare this to the total number of beneficiaries in prov and in prov_hhrg
+Do the numbers from these sources align? If not, why do you think they might not align?  
+
+Link: http://www.medpac.gov/docs/default-source/reports/chapter-8-home-health-care-services-march-2016-report-.pdf?sfvrsn=0    
+In 2014, about 3.4 million Medicare beneficiaries received care....
+
+```{r}
+prov_hhrg %>%
+  summarise(sum = sum(`Distinct Beneficiaries`))
+```       
+The sum is 3491843.
+
+Information from "Medpac: Report to the Congress- Medicare Payment Policy" aligns with the data.     
+
+2. Compare the total number of episodes in prov and in prov_hhrg. Do the numbers from these sources align? If not, why do you think they might not align?  
+```{r}
+library("dplyr") 
+prov_hhrg <- mutate(prov_hhrg, episodesnum1 = sum(`Total Episodes`))
+
+prov$`Total Episodes (non-LUPA)`<- as.numeric(prov$`Total Episodes (non-LUPA)`)
+prov$`Total LUPA Episodes` <- as.numeric(prov$`Total LUPA Episodes`)
+
+prov_new <- prov %>%
+  filter(!is.na(`Total LUPA Episodes`) & !is.na(`Total Episodes (non-LUPA)`)) 
+
+prov <- mutate(prov, episodesnum2 = sum(prov_new$`Total Episodes (non-LUPA)`) + sum(prov_new$`Total LUPA Episodes`))
+```
+
+If you run the following: (I didn't put it in the box since it does not match)     
+
+testthat::expect_equal(mean(prov_hhrg$episodesnum1), mean(prov$episodesnum2))
+
+We get the conclusion: No, they do not match.    
+mean(prov_hhrg$episodesnum1) = 4221877     
+mean(prov$episodesnum2) = 6009268   
+
+For the dataset prov, episode num is divided into LUPA and Non-LUPA, which might have led to a different, more detailed documentation, thus higher number.
+
+3. What two columns uniquely identify all the rows in prov_hhrg? (Hint: use n_distinct to document your answer.)   
+
+HHRG and Provider ID.
+```{r}
+prov_hhrg %>%
+    group_by(`HHRG`, `Provider ID`) %>%
+  summarise(n_hhrg = n_distinct(`Provider ID`))
+```   
+It has 105400 rows, which is the same as row num of the dataset.
+
+
+## 1.5 Merge Provider Costs with Provider Case-Mix (3 points)
+To assess whether a provider is overbilling, we need merge the HCC weights in  
+
+1. Google to find the "tidy data"" vignette and read it (or read R4DS chapter 12). What does the separate command do? What are the required arguments? What does the sep option do?    
+
+separate pulls apart one column into multiple columns, by splitting wherever a separator character appears. separate() makes it easy to split a compound variables into individual variables. separate() takes the name of the column to separate, and the names of the columns to separate into. If you wish to use a specific character to separate a column, you can pass the character to the sep argument of separate().   
+
+
+2. Google to find the dplyr two-table verbes vignette and read it (or read R4DS chapter 13). What does the inner_join command do? What are the required arguments? Find and link to a webpage which compares the merge commands in stata to the join commands in dplyr. Do dplyr joins generate a variable similar to _merge in stata?   
+An inner join matches pairs of observations whenever their keys are equal.The output of an inner join is a new data frame that contains the key, the x values, and the y values. We use by to tell dplyr which variable is the key.  
+
+ website:https://guides.nyu.edu/quant/merge   
+ In Stata, the ???merge??? command performs a Full Join by default.
+Observations must be dropped to create an Inner Join.
+
+3. Google to find the stringr vignette and read it (or read R4DS chapter 14). What does the str_sub command do? What are the required arguments? What does the str_trim command do?   
+
+str_sub will recycle all arguments to be the same length as the longest argument. If any arguments are of length 0, the output will be a zero length character vector.Arguments: string-input character vector, start/end and value. str_trim trims whitespace from start and end of string.   
+
+4. There is no common identifer between the two datasets. However, there is common information that can be used to link the two datasets. Review both datasets using the View statement. What five types of information are available in both datasets? In your own words, explain what of these five types of information are.  
+```{r}
+View(cm_wt)
+View(prov_hhrg)
+```     
+1) Description1: episodes    
+2) Description2: therapy visits    
+3,4,5) Clinical, Functional, and Service Levels    
+
+5. Which column(s) do you plan to merge on from prov_hhrg? How many distinct HHRG groups are there using this (these) column(s)?   
+HHRG Description
+```{r}
+prov_hhrg %>%
+  summarise(number = n_distinct(`HHRG Description`))
+```    
+
+148 distinct groups.     
+
+
+6. Take the column(s) you chose from prov_hhrg and use separate and/or str_sub to add five new columns ??? one for each of the information types you listed in #1 above. Be sure to apply str_trim to any columns which contain text.  
+```{r, include = TRUE}
+library(tidyr)
+prov_hhrg <- prov_hhrg %>% 
+  separate(col = "HHRG Description", 
+           into = c("Episode Status", "Therapies", "Clinical Severity", "Functional Severity", "Service Severity"), sep = ",")
+```    
+
+
+```{r}
+library(stringr)
+prov_hhrg$`Clinical Severity` <- str_trim(prov_hhrg$`Clinical Severity`)
+prov_hhrg$`Functional Severity` <- str_trim(prov_hhrg$`Functional Severity`)
+prov_hhrg$`Service Severity` <- str_trim(prov_hhrg$`Service Severity`)
+
+prov_hhrg$`Clinical Severity` <- str_sub(prov_hhrg$`Clinical Severity`,  -1)
+prov_hhrg$`Functional Severity` <- str_sub(prov_hhrg$`Functional Severity`,  -1)
+prov_hhrg$`Service Severity` <- str_sub(prov_hhrg$`Service Severity`,  -1)
+```
+
+1. R will likely throw a warning "Too many values. . . "" followed by a series of row numbers. List three of the row numbers returned in the warning message. Use filter(row_number() == xx) to check these rows by hand. Why did separate or str_sub throw a warning for these rows? Do you think it makes sense to drop these rows? Why or why not?     
+Too many values at 302 locations: 207, 950, 1603, 2094, 2189, 4624, 13895, 16863, 17150, 17280, 17382, 18145, 18344, 18467, 18499, 18566, 18847, 18981, 19213, 19257, ...   
+
+7. Which column(s) do you plan to merge on from cm_wt? How many distinct HHRG groups are there using this (these) column(s)?   
+Description and Clinical, Functional, and Service Levels.   
+```{r}
+cm_wt %>%
+    summarise(number = n_distinct(cm_wt$Description))
+```      
+
+17 disticnt HHRG groups.     
+
+
+8. Take the column(s) you chose from cm_wt and use separate and/or str_sub to add five new columns ??? one for each of the information types you listed in #1 above. Be sure to apply str_trim to any columns which contain text. Be sure to use the same five column names as you did in the previous question.
+
+```{r}
+cm_wt$`Description` <- str_trim(cm_wt$`Description`)
+
+cm_wt <- cm_wt %>% 
+  separate(col = "Description", into = c("Episode Status", "Therapies"), sep = ",")
+
+cm_wt <- cm_wt %>% 
+  mutate("Clinical Severity" = str_sub(cm_wt$"Clinical, Functional, and Service Levels", start = 2, end = 2)) 
+  
+cm_wt <- cm_wt %>% 
+  mutate("Functional Severity" = str_sub(cm_wt$"Clinical, Functional, and Service Levels", start = 4, end = 4))
+
+cm_wt <- cm_wt %>%
+  mutate("Service Severity" = str_sub(cm_wt$"Clinical, Functional, and Service Levels", start = 6, end = 6))
+
+```
+
+9. A successful merge requires both datasets to have the same values in addition to the same column names. For each of the five new columns, run count in both datasets. Which of the column(s) have the same values in both datasets? Which of the column(s) have similar values, but require further cleanup?
+Read about the fct_recode and fct_collapse commands in section 15.5. Use these two commands to fix the columns in cm_wt to ensure that the five columns have identical values to prov_hhrg.    
+```{r Count}
+prov_hhrg %>% count(`Episode Status`)
+cm_wt %>% count(`Episode Status`)
+
+prov_hhrg %>% count(`Therapies`)
+cm_wt %>% count(`Therapies`)
+
+prov_hhrg %>% count(`Clinical Severity`)
+cm_wt %>% count(`Clinical Severity`)
+
+prov_hhrg %>% count(`Functional Severity`)
+cm_wt %>% count(`Functional Severity`)
+
+prov_hhrg %>% count(`Service Severity`)
+cm_wt %>% count(`Service Severity`)
+```   
+
+Episode Status and Therapies do not match so we need further clean up.
+
+```{r Episode Status}
+library(forcats)
+cm_wt$`Episode Status` <- str_trim(cm_wt$`Episode Status`)
+
+cm_wt$`Episode Status` <- fct_recode(cm_wt$`Episode Status`, 
+                                    `Early Episode`  = c("1st and 2nd Episodes"), 
+                                    `Late Episode` = c("3rd+ Episodes"),
+                                    `Early or Late Episode` = c("All Episodes"))
+
+```     
+
+```{r Therapies}
+
+cm_wt$`Therapies` <- str_trim(cm_wt$`Therapies`)
+
+cm_wt$`Therapies` <- fct_collapse(cm_wt$`Therapies`,
+             `0-13 therapies` = c("0 to 5 Therapy Visits", "6 Therapy Visits", "7 to 9 Therapy Visits", "10 Therapy Visits", "11 to 13 Therapy Visits"),
+             `14-19 therapies` = c("14 to 15 Therapy Visits", "16 to 17 Therapy Visits", "18 to 19 Therapy Visits"),
+             `20+ therapies` = c("20+ Therapy Visits"))
+
+```     
+
+```{r}
+cm_wt$`Clinical Severity` <- str_trim(cm_wt$`Clinical Severity`)
+cm_wt$`Functional Severity` <- str_trim(cm_wt$`Functional Severity`)
+cm_wt$`Service Severity` <- str_trim(cm_wt$`Service Severity`)
+
+prov_hhrg$`Clinical Severity` <- str_trim(prov_hhrg$`Clinical Severity`)
+prov_hhrg$`Functional Severity` <- str_trim(prov_hhrg$`Functional Severity`)
+prov_hhrg$`Service Severity` <- str_trim(prov_hhrg$`Service Severity`)
+
+cm_wt$`Therapies` <- str_trim(cm_wt$`Therapies`)
+prov_hhrg$`Therapies` <- str_trim(prov_hhrg$`Therapies`)
+```     
+
+10. Create a new df called prov_hhrg_wt by inner joining cm_wt to prov_hhrg. Here are two tests to check that your merge worked:   
+(a) use test_that to check that prov_hhrg_wt has 105400 rows,   
+(b) use the count(is.na(hcc)) command to show that hcc is non-missing for all the rows. 
+```{r, include = TRUE}
+library("dplyr")
+library("tidyr")
+
+prov_hhrg_wt <- inner_join(cm_wt, prov_hhrg, by = c("Episode Status", "Therapies", "Clinical Severity", "Functional Severity", "Service Severity"), copy = TRUE)
+```
+
+```{r testing merge}
+testthat::expect_equal(nrow(prov_hhrg_wt), 105400)
+prov_hhrg_wt %>% count(is.na(hcc))
+```    
+We can see that the merge worked.   
+
+
+## 1.6 Billing Outlier Analysis (3 points)
+Construct a dataset prov_sum with one row per Provider ID and the following columns: Provider ID, agency name, state, average HHA medicare payment amount (weighted by total episodes), average HCC score (weighted by total episodes) and the number of total episodes.
+```{r}
+names(prov_hhrg_wt)[names(prov_hhrg_wt) == "Total Episodes"] <- "Total Episodes_temp"
+```
+
+```{r}
+ prov_sum <- prov_hhrg_wt %>% 
+  group_by(`Provider ID`, `Agency Name`, `State`) %>%
+  mutate(`Average Payment` = weighted.mean(`Average HHA Medicare Payment Amount`, `Total Episodes_temp`), `Average HCC` = weighted.mean(`hcc`, `Total Episodes_temp`), `Total Episodes` = sum(`Total Episodes_temp`)) 
+
+prov_sum <- select(prov_sum, `Provider ID`, `Agency Name`, `State`, `Average Payment`, `Average HCC`, `Total Episodes`)
+
+```
+
+1. Question: How much variation is there in average cost per episode by home-health agency?  
+```{r}
+quantile(prov_sum$`Average Payment`)
+```
+
+```{r}
+library(ggplot2)
+ggplot(data = prov_sum) +
+  geom_histogram(mapping = aes(x = `Average Payment`), binwidth = 0.5)
+```    
+Looking at the average cost per episode by quartile and ggplot, we can see a lot of variation.   
+
+
+2. Question: How much variation is there in average cost after accounting for case-mix weight? Show three different ways to depict the covariation of these two variables. Then explain which plot you prefer to answer the question and why.     
+```{r}
+prov_sum <- prov_sum %>%
+  mutate(`Normalized Payment` = `Average Payment` / `Average HCC`)
+
+ggplot(data = prov_sum) +
+  geom_histogram(mapping = aes(x = `Normalized Payment`), binwidth = 0.5)
+```       
+
+After accounting for the average HCC, the histogram looks different from the previous one. It shows that cost and hcc are not independent.
+
+```{r}
+ggplot(data = prov_sum) + 
+  geom_point(aes(x = `Average HCC`, y = `Average Payment`))
+
+```   
+```{r}
+ggplot(data = prov_sum, aes(x = `Average HCC`, y = `Average Payment`)) + 
+  geom_point() +
+  geom_smooth(method=lm)
+```      
+
+I directly showed geom_point plot between two variable, one with regression line and one without. They show there is a clear linear relationship between them. I would choose the last one as it is clear and intuitive.
+
+
+3. For each HHA, construct a new "normalized cost" variable which is the ratio of average cost to the average case-mix weight. Question: How much of the variation in average cost per episode across HHAs is accounted for by differences in case-mix?   
+(Hint: Find and link to a stack overflow thread on overlaying histograms with ggplot2.)  
+
+Stack overflow: https://stackoverflow.com/questions/23480248/overlapping-ggplot2-histograms-with-different-variables
+```{r overlaying histogram}
+prov_sum <- prov_sum %>%
+  mutate(`Normalized Payment` = `Average Payment` / `Average HCC`)
+
+ggplot() +
+  geom_histogram(aes(x = prov_sum$`Average Payment`), fill = 1, alpha = 0.5) +
+  geom_histogram(aes(x = prov_sum$`Normalized Payment`), fill = 2, alpha = 0.5) 
+```      
+
+There is much variation. most saliently, the maximum of the cost has gone down significantly as high average cost was divided by hcc score. The distibution of normailsed cost look more similar to normal distribution, it is more evenly distributed.
+
+
+4. Question: What are the top 5 HHAs with the highest billing per episode in Illinois? What are the top 5 HHAs with the highest billing per episode after normalizing for case mix in Illinois? 
+```{r}
+prov_sum$`Average Payment` <- as.numeric(prov_sum$`Average Payment`)
+prov_sum <- as.data.frame(prov_sum)
+prov_sum$`Average Payment` <- format(round(prov_sum$`Average Payment`, 2), nsmall = 2)
+prov_sum$`Average Payment` <- as.numeric(prov_sum$`Average Payment`)
+```
+
+```{r Top 5}
+prov_sum <- prov_sum %>%
+  mutate(`Normalized Payment` = `Average Payment` / `Average HCC`)
+
+prov_sum_IL <- prov_sum %>%  
+  filter(State == "IL") 
+
+prov_sum_IL[order(prov_sum_IL$`Average Payment`,decreasing = TRUE),][1:50,1:2]
+prov_sum_IL[order(prov_sum_IL$`Normalized Payment`,decreasing = TRUE),][1:50,1:2]
+```
+Top 5:     
+1) PRIME CARE RESOURCE, INC     
+2) FORUM HEALTH CARE    
+3) SIMPLY HOME HEALTH, LLC    
+4) HOME BOUND HEALTHCARE, INC     
+5) WHITESTAR HOME HEALTH INC   
+
+Top 5 after Normalising:     
+1) FAIRFIELD MEMORIAL HOSPITAL    
+2) HENDERSON COUNTY HEALTH DEPART   
+3) BEST CARE HOME HEALTH, INC.  
+4) QUANTUM HEALTHCARE SERVICES, INC   
+5) SWEDISH COVENANT HOSPITAL HOME    
+
+Is there any overlap between these two lists? What might happen if OIG decided to try to push down costs at the 5 HHAs with the highest billing per episode in Illinois?    
+No, there is no overlapping between two lists. It means average cost is not necessarily very informative as you get different result after normalising them with hcc score.    
+if OIG decided to push down cost, they would squeeze out profit and market shares for those 5 HHAs, benefiting top 5 for normalized costs who are actually charging too much, so it might not be a good policy.
+
+5. For each HHA, construct a new variable "possible overbilling per episode"" which is average amount paid by Medicare to the HHA minus the normalized cost variable you built in 3.   
+```{r}
+prov_sum_IL <- prov_sum_IL %>%
+  mutate(`Possible Overbilling` = `Average Payment`- `Normalized Payment` )
+
+prov_sum_IL[order(prov_sum_IL$`Possible Overbilling`,decreasing = TRUE),][1:50,1:2]
+```
+Question: Summingover all episodes, which 5 HHAs in Illinois have the most possible over-billing? When would this list be useful and when would the list in your response to question (4) be useful?   
+1) PRIME CARE RESOURCE, INC     
+2) FORUM HEALTH CARE   
+3) SIMPLY HOME HEALTH, LLC    
+4) WHITESTAR HOME HEALTH INC    
+5) HOME BOUND HEALTHCARE, INC     
+
+This list is useful when you try to identify relative overbilling, list in question (4) is more useful when you want to observe the absolute cash flow / absolute revenue of each HHA.
+
